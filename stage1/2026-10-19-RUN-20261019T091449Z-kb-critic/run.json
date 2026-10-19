@@ -1,0 +1,115 @@
+{
+  "run_id": "RUN-20261019T091449Z-kb-critic",
+  "project": "Shop",
+  "agent": "kb-critic",
+  "globuli_commit": "9a83eb437fd977c3ce1fb96b3716bbb01271a30e",
+  "cli": "claude",
+  "cli_version": "2.1.302 (Claude Code)",
+  "model": "claude-fable-5-1",
+  "work_item": null,
+  "requirements": [],
+  "iteration": 2,
+  "mode": "recheck",
+  "git": {
+    "repo": "/Users/Shared/Globuli-bf/repos/Shop/bf-shop-knowledge",
+    "branch": "notes/linear-GTB-2-20261018T171509Z",
+    "base_commit": "fbf2c2e8f90108622e542dfce69c50e97488fe83",
+    "head_before": "fbf2c2e8f90108622e542dfce69c50e97488fe83",
+    "head_after": "fbf2c2e8f90108622e542dfce69c50e97488fe83"
+  },
+  "started_at": "2026-10-19T09:14:49.321Z",
+  "ended_at": "2026-10-19T09:17:19.693Z",
+  "duration_s": 150.372,
+  "machine_load": {
+    "load_1m": 2.75,
+    "cpus": 14,
+    "free_disk_gb": 288
+  },
+  "exit": "completed",
+  "verdict": {
+    "status": "fail",
+    "summary": "Re-check of Stage 1 PR #1 after the fix run: both earlier findings are fixed. DEC-0008 and DEC-0009 are recorded, sensible and contradict nothing in LIN-GTB-2. New on the changed text: one Medium gap (the field's cut at 280 code points inside a grapheme cluster or around leading whitespace is undefined) and two Low wording issues in FR-0001. No question filed, no status changed, no commit needed.",
+    "finding_responses": [
+      {
+        "finding_id": "RUN-20261019T090649Z-kb-critic.F-01",
+        "response": "fixed",
+        "note": "DEC-0008 makes the web form and the app count the same unit as orders-service (code points after trimming) and normalises CR LF to LF at both ends; DEC-0009 and the new FR-0002.AC-6 and FR-0003.AC-6 define the clients' behaviour on an HTTP 400 for the note with observable Thens. FR-0001.AC-3 and its examples name DEC-0008.",
+        "evidence": "decisions.md lines 15-16 (DEC-0008, DEC-0009); prd/requirements/FR-0002.md lines 61-65 and 82-91; prd/requirements/FR-0003.md lines 64-69 and 85-94; prd/requirements/FR-0001.md lines 82-87 and 123-125."
+      },
+      {
+        "finding_id": "RUN-20261019T090649Z-kb-critic.F-02",
+        "response": "fixed",
+        "note": "FR-0001.AC-1 now requires deliveryNote both on the single order and on every order in the customer's order list, with a list example row.",
+        "evidence": "prd/requirements/FR-0001.md lines 67-70 and 126."
+      }
+    ],
+    "findings": [
+      {
+        "id": "F-01",
+        "severity": "medium",
+        "category": "spec-mismatch",
+        "title": "Field's cut at 280 code points undefined inside a grapheme cluster and around leading whitespace",
+        "location": {
+          "file": "prd/requirements/FR-0003.md",
+          "line": 64,
+          "end_line": 69
+        },
+        "evidence": "FR-0003.AC-3 (and FR-0002.AC-3, lines 61-65): \"counted as orders-service counts them (Unicode code points after trimming ...), not as grapheme clusters\" / \"Then the field holds only the first 280 characters\". DEC-0003 and DEC-0008 say nothing about a cut inside a cluster or about leading whitespace. node: `[...('a'.repeat(278)+'👨‍👩‍👧')].slice(0,280).join('')` ends in \"aaa👨‍\" (a dangling man plus zero-width joiner); `[...'é'].length` is 2 for a decomposed accent.",
+        "failure_scenario": "A customer pastes 278 × \"a\" followed by a family emoji (283 code points). One implementation keeps the first 280 code points and shows a broken emoji (or, with a decomposed \"é\", a letter without its accent); another drops the whole cluster and the field holds 278. Likewise, pasting three spaces plus 285 × \"a\" leaves either \"   \" plus 277 × \"a\" or \"   \" plus 280 × \"a\" depending on whether the cut counts raw or trimmed code points. Each reading satisfies the AC-3 Then as written, so QA cannot tell which one is wrong.",
+        "suggested_fix": "Add to DEC-0008 (or a new DEC) the cut rule for the field: for example, the field never keeps a partial grapheme cluster (it drops the cluster that would cross the 280th code point, so it may hold fewer than 280 code points), and the cut counts code points of the text as it stands in the field, with leading whitespace counted. Name the rule in FR-0002.AC-3 and FR-0003.AC-3.",
+        "requirement_ref": "FR-0003.AC-3",
+        "confidence": "medium"
+      },
+      {
+        "id": "F-02",
+        "severity": "low",
+        "category": "docs",
+        "title": "FR-0001 example says the field shows 57 family emoji, which DEC-0008 rules out",
+        "location": {
+          "file": "prd/requirements/FR-0001.md",
+          "line": 124
+        },
+        "evidence": "Example row: \"57 × family emoji (5 code points each) | 285 | HTTP 400, no order created, although the field shows 57 characters\". DEC-0008 and FR-0002.AC-3 / FR-0003.AC-3 make the field hold at most 280 code points, so at most 56 family emoji.",
+        "failure_scenario": "A reader of FR-0001 takes the remark as the clients' behaviour and expects the web form or the app to accept 57 family emoji before orders-service rejects them; under DEC-0008 the field stops at 56 and the HTTP 400 is only reachable by calling the API directly. The remark describes the grapheme-cluster behaviour the fix removed.",
+        "suggested_fix": "Replace \"although the field shows 57 characters\" with \"(sent directly to the API; the web form and the app stop at 56, DEC-0008)\".",
+        "requirement_ref": "FR-0001.AC-3",
+        "confidence": "high"
+      },
+      {
+        "id": "F-03",
+        "severity": "low",
+        "category": "docs",
+        "title": "FR-0001.AC-1 promises 'the same note text' but DEC-0008 rewrites CR LF to LF",
+        "location": {
+          "file": "prd/requirements/FR-0001.md",
+          "line": 67,
+          "end_line": 70
+        },
+        "evidence": "AC-1 Then: \"fetching that order returns the same note text (trimmed as DEC-0002 says)\". DEC-0008: CR LF \"is normalised to one line feed (LF) before trimming and counting ... by orders-service on receipt\". Example row line 125: \"the line break stored as one LF (DEC-0008)\".",
+        "failure_scenario": "A test for AC-1 sends \"Ring twice\" + CR LF + \"Back door\" and asserts the fetched deliveryNote equals the text sent, as the Then says; it fails because orders-service returns the note with LF, as AC-3's example and DEC-0008 require.",
+        "suggested_fix": "Reword the Then to \"returns the same note text (trimmed as DEC-0002 says, with CR LF normalised to LF as DEC-0008 says)\".",
+        "requirement_ref": "FR-0001.AC-1",
+        "confidence": "high"
+      }
+    ],
+    "questions": [],
+    "outputs": [
+      {
+        "kind": "report",
+        "ref": "/Users/gordan/.globuli-bf/runs/RUN-20261019T091449Z-kb-critic/out/report.md",
+        "description": "Re-check report: responses to the two earlier findings and three new findings on the changed text."
+      }
+    ]
+  },
+  "checks": [],
+  "usage": {
+    "input_tokens": 226,
+    "output_tokens": 11643,
+    "cache_read_tokens": 350493,
+    "cache_write_tokens": 44915,
+    "tool_calls": null,
+    "cost_usd_estimate": 1.57033325
+  },
+  "report_path": "report.md",
+  "transcript_local_path": "/Users/gordan/.globuli-bf/transcripts/RUN-20261019T091449Z-kb-critic.jsonl"
+}
